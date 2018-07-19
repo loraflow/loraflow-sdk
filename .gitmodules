@@ -1,21 +1,6 @@
-[submodule "lib/packet_forwarder"]
-	path = lib/packet_forwarder
-	url = https://xenbots.com:8083/forks/packet_forwarder.git
-[submodule "lib/lora_gateway"]
-	path = lib/lora_gateway
-	url = https://xenbots.com:8083/forks/lora_gateway.git
-[submodule "lib/lrucache11"]
-	path = lib/lrucache11
-	url = https://github.com/mohaps/lrucache11.git
 [submodule "lib/SQLiteCpp"]
 	path = lib/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
-[submodule "lib/http-parser"]
-	path = lib/http-parser
-	url = https://github.com/nodejs/http-parser.git
 [submodule "lib/date"]
 	path = lib/date
 	url = https://github.com/HowardHinnant/date.git
-[submodule "lib/paho.mqtt.embedded-c"]
-	path = lib/paho.mqtt.embedded-c
-	url = https://github.com/eclipse/paho.mqtt.embedded-c.git

@@ -30,13 +30,10 @@ INCLUDES += -I$(LIBROOT)/json
 INCLUDES += -I$(LIBROOT)/spdlog
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/include
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/sqlite3
-INCLUDES += -I$(LIBROOT)/paho.mqtt.embedded-c/MQTTClient/src
-INCLUDES += -I$(LIBROOT)/paho.mqtt.embedded-c/MQTTPacket/src
 INCLUDES += -I$(LIBROOT)
 INCLUDES += -I$(SRCROOT)/app
 INCLUDES += -I$(SRCROOT)/back
 INCLUDES += -I$(SRCROOT)
-INCLUDES += -I$(LIBROOT)/packet_forwarder/lora_pkt_fwd/inc
 
 SRC += $(wildcard $(SRCROOT)/app/*.cpp)
 SRC += $(wildcard $(SRCROOT)/api/*.cpp)
@@ -47,18 +44,6 @@ SRC += $(wildcard $(SRCROOT)/back/*.cpp)
 SRC += $(wildcard $(SRCROOT)/back/external/*.cpp)
 SRC += $(wildcard $(SRCROOT)/front/*.cpp)
 SRC += $(wildcard $(SRCROOT)/types/*.cpp)
-SRC += $(wildcard $(SRCROOT)/crypt/*.cpp)
-SRC += $(wildcard $(LIBROOT)/http-parser/http_parser.c)
-
-ifneq (,$(findstring CONFIG_SUPPORT_SIGN,$(PROD_MACROS)))
-USEPKI=1
-endif
-ifneq (,$(findstring CONFIG_SUPPORT_HWAUTH,$(PROD_MACROS)))
-USEPKI=1
-endif
-ifeq ($(USEPKI),1)
-SRC += src/gen/aipubkey.cpp
-endif
 
 ifneq (,$(findstring CONFIG_SUPPORT_EMBEDNS,$(PROD_MACROS)))
 SRC += $(wildcard $(SRCROOT)/lrwan/*.cpp)
@@ -67,6 +52,8 @@ SRC += $(wildcard $(LIBROOT)/SQLiteCpp/src/*.cpp)
 SRC += $(wildcard $(LIBROOT)/SQLiteCpp/sqlite3/sqlite3.c)
 SRC += $(wildcard $(LIBROOT)/paho.mqtt.embedded-c/MQTTPacket/src/*.c)
 endif
+
+SRC += $(wildcard $(LIBROOT)/json/parson.c)
 
 CFLAGS+= $(addprefix -D,$(PROD_MACROS))
 CFLAGS+= -ffunction-sections -fdata-sections
