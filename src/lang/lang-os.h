@@ -107,7 +107,7 @@ namespace lang {
         void atexit(std::function<void(void)>);
 
         string exec(const char* cmd);
-        void mkdirp(const string path, bool isfile=false);
+        int mkdirp(const string path, bool isfile=false);
         void reboot();
     }
 

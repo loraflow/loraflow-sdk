@@ -64,16 +64,16 @@ namespace lang {
             _exitfns.push_back(fn);
             GUARD_END();
         }
-        void mkdirp(const string path, bool isfile) {
+        int mkdirp(const string path, bool isfile) {
             string cmd = "mkdir -p \"" + path + "\"";
             if (isfile) {
                 auto pos = cmd.find_last_of("/");
                 if ((int)pos >= (int)cmd.length() || pos == string::npos) {
-                    return;
+                    return -1;
                 }
                 cmd = cmd.substr(pos);
             }
-            system(cmd.c_str());
+            return system(cmd.c_str());
         }
         std::string exec(const char* cmd) {
             std::array<char, 128> buffer;
