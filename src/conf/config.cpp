@@ -54,11 +54,8 @@ namespace conf {
                                     "\t[--log=LEVEL]         set log level to LEVEL (debug|info|warn|error|fatal)\n"
                                     "\t[--ns=SERVER]         using SERVER as lorawan network service\n"
                                     "\t[--conf=DIRECTORY]    loading conf from DIRECTORY\n"
-                                    "\t[--mod=DEVICE]        radio module at DEVICE\n"
-                                    "\t[--web=PORT]          open admin at PORT (default %d)\n"
-                                    "\t[--passwd=PASSWORD]   set admin PASSWORD\n"
                                     "\t[--help]              print usage\n",
-                            argv[0], _local.system.weblisten);
+                            argv[0]);
                     exit(-1);
                 default:
                     break;
@@ -95,68 +92,6 @@ namespace conf {
             std::exception_ptr p = std::current_exception();
             WARNF("cannot load local config! {}", p.__cxa_exception_type()->name());
         }
-        try {
-            _raw_global = Json::parse(jsons::normalize(_confhome + _global_conf));
-            Json root;
-            if (jsons::optional(_raw_global, "nanohaul_conf", root)) {
-                Json obj;
-                if (jsons::optional(root, "radio_0", obj)) {
-                    _global.radio0.load_disk(obj);
-                }
-                if (jsons::optional(root, "radio_1", obj)) {
-                    _global.radio1.load_disk(obj);
-                }
-            }
-        } catch (...) {
-            WARNF("cannot load global config!");
-        }
-    }
-
-    Json Config::to_api() {
-        Json jr0, jr1;
-        Json jlo = _local.get();
-        _global.radio0.save_api(jr0);
-        _global.radio1.save_api(jr1);
-        return Json{{"gateway", jlo},
-                    {"radio0",  jr0},
-                    {"radio1",  jr1}};
-    }
-
-    ErrStatus Config::from_api(Json &json) {
-        ErrStatus ok = ERR_OK;
-        do {
-            Json obj;
-            bool touch_local = false;
-            bool touch_global = false;
-            if (jsons::optional(json, "gateway", obj)) {
-                if (ERR_OK != (ok = _local.load_from(obj))) {
-                    break;
-                }
-                touch_local = true;
-            }
-            if (jsons::optional(json, "radio0", obj)) {
-                if ((ok = _global.radio0.load_api(obj)) != ERR_OK) {
-                    break;
-                }
-                touch_global = true;
-            }
-            if (jsons::optional(json, "radio1", obj)) {
-                if ((ok = _global.radio1.load_api(obj)) != ERR_OK) {
-                    break;
-                }
-                touch_global = true;
-            }
-            if (touch_local && ERR_OK != (ok = save_local())) {
-                break;
-            }
-            if (touch_global && ERR_OK != (ok = _save_global())) {
-                break;
-            }
-            if (touch_global) {
-                applyChanges();
-            }
-        } while (0);
-        return ok;
     }
 
     void Config::applyChanges(bool reload) {
@@ -185,22 +120,6 @@ namespace conf {
             etc::ulnwk_change(_local.system.ulnwk);
         }
         io::file((_confhome + _local_conf).c_str()).write(text);
-        return ERR_OK;
-    }
-
-    ErrStatus Config::_save_global() {
-        Json jg, jr0, jr1;
-        jsons::optional(_raw_global, "nanohaul_conf", jg);
-        jsons::optional(jg, "radio_0", jr0);
-        jsons::optional(jg, "radio_1", jr1);
-        _global.radio0.save_disk(jr0);
-        _global.radio1.save_disk(jr1);
-        jg["radio_0"] = jr0;
-        jg["radio_1"] = jr1;
-        _raw_global["nanohaul_conf"] = jg;
-        _raw_global["type"] = "nanohaul";
-        string text = jsons::serialize(_raw_global, true);
-        io::file((_confhome + _global_conf).c_str()).write(text);
         return ERR_OK;
     }
 }

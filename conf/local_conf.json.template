@@ -3,44 +3,16 @@
         "system": {
             "gateway_ID": "aa555a0000000101",
             "log": "info",
-            "mod1": "/dev/ttyS0",
-            "mod2": "/dev/ttyS1",
-            "web": 8080,
-            "txpower": 14,
-            "wifimode": "",
-            "wifipass": "",
-            "wifissid": ""
+            "udplisten": 1680,
+            "txpower": 14
         },
         "networkservice": {
-            "type": "local",
+            "type": "external",
             "external": {
-                "server": "",
                 "token": "",
-                "url": "192.168.32.51"
+                "url": "loraflow.io"
             },
-            "local": {
-                "appservice": {
-                    "aws": {},
-                    "azure": {},
-                    "http": {
-                        "method": "POST",
-                        "url": ""
-                    },
-                    "mqtt": {
-                        "server": "",
-                        "clientid": "",
-                        "password": "",
-                        "topic": "",
-                        "user": ""
-                    },
-                    "senzflow": {
-                        "token": ""
-                    },
-                    "type": ""
-                },
-                "band": "CN470PRE",
-                "netid": "123456"
-            }
+            "local": {}
         }
     }
 }

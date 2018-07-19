@@ -14,7 +14,6 @@
 #include <list>
 #include <ipc/lora-ipc.h>
 #include <conf/conf-local.h>
-#include <conf/conf-global.h>
 
 namespace conf {
 
@@ -26,7 +25,6 @@ namespace conf {
     using Listener = std::function<void(void)>;
     class Config {
         string _confhome = "conf/";
-        const string _global_conf = "global_conf.json";
         const string _local_conf = "local_conf.json";
         list<Listener>  _listeners;
     public:
@@ -37,15 +35,11 @@ namespace conf {
         void listen(Listener listener) { _listeners.push_back(listener); }
 
         const Local & c_local() const { return _local; }
-        const Global & c_global() const { return _global; }
         Local & local() { return _local; }
-        Global & global() { return _global; }
 
         Json load_resource(string name) { return Json::parse(jsons::normalize(_confhome + name)); }
 
         void _load();
-        Json to_api();
-        ErrStatus from_api(Json &json);
         ErrStatus save_local();
         void applyChanges(bool reload=false);
         void reset();
@@ -54,12 +48,7 @@ namespace conf {
     protected:
 
         Local       _local = {};
-        Global      _global = {};
-
-        Json  _raw_local;
-        Json  _raw_global;
-
-        ErrStatus _save_global();
+        Json        _raw_local;
 
         bool validate_server(string &s) {
             return s.size() > 0;
