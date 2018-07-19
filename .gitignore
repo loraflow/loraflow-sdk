@@ -1,0 +1,12 @@
+projects/keil/Objects/
+projects/keil/JLinkLog.txt
+projects/keil/Listings/aicast-cn.map
+projects/keil/Listings/startup_keil.lst
+projects/keil/JLinkSettings.ini
+src/datatypes/copy_loragw_hal.h
+build
+dummy
+conf/local_conf.json
+conf/global_conf.json
+node.db3
+toolchain/openwrt-mips
