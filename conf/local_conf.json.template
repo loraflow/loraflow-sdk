@@ -1,7 +1,7 @@
 {
     "gateway_conf": {
         "system": {
-            "gateway_ID": "aa555a0000000101",
+            "gateway_ID": "0000000000000000",
             "log": "info",
             "udplisten": 1680,
             "txpower": 14

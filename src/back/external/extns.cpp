@@ -28,8 +28,9 @@ namespace haul {
             _down = down;
             const auto &lcf = conf::INSTANCE.local();
             const auto &ext = lcf.networkservice.external;
-            if (!_mac.from_string(lcf.system.gatewayID)) {
-                ERRORF("bad gateway id {}", lcf.system.gatewayID);
+            const auto &gwid = lcf.system.gatewayID;
+            if (gwid == "0000000000000000" || !_mac.from_string(gwid)) {
+                ERRORF("bad gateway id {}", gwid);
                 exit(-1);
             } else if (!ext.url.size()) {
                 ERRORF("missing ns server");
