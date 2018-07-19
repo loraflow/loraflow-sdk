@@ -24,9 +24,4 @@ sdkbone:
 	make -f make/sdkbone.mak
 
 clean:
-	make -f make/bighaul.mak clean
-	make -f make/bigbone.mak clean
-	make -f make/nanohaul.mak clean
-	make -f make/nanobone.mak clean
-	make -f make/sdkhaul.mak clean
-	make -f make/sdkbone.mak clean
+	@rm -rf build

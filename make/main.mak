@@ -1,8 +1,6 @@
 
 include make/os.mak
 
-$(warning  $(TOOLCHAIN))
-
 ifeq ($(OS),Windows_NT)
 TOOLCHAIN ?= native
 else
@@ -17,8 +15,6 @@ PROD_MACROS += ASZVER=$(ASZVER)
 ifneq (,$(findstring CONFIG_SUPPORT_EMBEDNS,$(PROD_MACROS)))
 PROD_MACROS += CONFIG_SUPPORT_REST
 endif
-
-$(warning  $(TOOLCHAIN))
 
 include make/toolchain-$(TOOLCHAIN).mak
 
@@ -102,9 +98,6 @@ OBJS += $(LIBLORAGW_OBJS)
 OBJS += $(PKTFWD_OBJS)
 CFLAGS += -DCONFIG_SUPPORT_PF
 endif
-
-include make/pktfwd-common.mak
-OBJS += $(PKTFWD_COMMON_OBJS)
 
 include make/copy-headers.mak
 

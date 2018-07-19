@@ -15,21 +15,21 @@ clean:
 	@rm -f src/types/copy_loragw_hal.h
 
 build/$(TARGET):
-	mkdir -p $@ $@/objs
+	@mkdir -p $@ $@/objs
 
-build/$(TARGET)/objs/%.o: %.c build/$(TARGET)/objs/%.d $(FILEDEPS) | build/$(TARGET) build/$(TARGET)/objs
+build/$(TARGET)/objs/%.o: %.c build/$(TARGET)/objs/%.d $(FILEDEPS)
 	@+echo "CC $<" ;\
 	$(CC) -c $(CFLAGS) -std=c99 $< -o $@ -MD -MF $(@:.o=.dep)
 
-build/$(TARGET)/objs/%.o: %.cpp build/$(TARGET)/objs/%.d $(FILEDEPS) | build/$(TARGET) build/$(TARGET)/objs
+build/$(TARGET)/objs/%.o: %.cpp build/$(TARGET)/objs/%.d $(FILEDEPS)
 	@+echo "C++ $<" ;\
 	$(CPP) -c $(CPPFLAGS) $< -o $@ -MD -MF $(@:.o=.dep)
 
-build/$(TARGET)/objs/%.o: %.s build/$(TARGET)/objs/%.d $(FILEDEPS) | build/$(TARGET) build/$(TARGET)/objs
+build/$(TARGET)/objs/%.o: %.s build/$(TARGET)/objs/%.d $(FILEDEPS)
 	@+echo "CC $<" ;\
 	$(CC) -c -mcpu=cortex-m4 -mthumb $< -o $@ -MD -MF $(@:.o=.dep)
 
-build/$(TARGET)/$(TARGET).elf: $(OBJS) $(LIBS)
+build/$(TARGET)/$(TARGET).elf: build/$(TARGET) $(OBJS) $(LIBS)
 	@+echo "Linking $@";\
 	$(LD) $(OBJS) $(LFLAGS) -o $@
 

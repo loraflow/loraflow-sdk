@@ -1,7 +1,5 @@
 ### Application-specific constants
 
-APP_NAME := lora_pkt_fwd
-
 ### Environment constants
 
 PKTFWD_COMMON_SRC_ROOT := lib/packet_forwarder/lora_pkt_fwd
