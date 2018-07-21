@@ -9,7 +9,7 @@ endif
 
 PROD_MACROS += $(MAKE_DEFINES)
 
-ASZVER ?= 0.0.0.
+ASZVER ?= $(shell git describe --tags)
 PROD_MACROS += ASZVER=$(ASZVER)
 
 ifneq (,$(findstring CONFIG_SUPPORT_EMBEDNS,$(PROD_MACROS)))
