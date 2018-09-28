@@ -41,6 +41,7 @@ namespace haul {
             Transports      _transports;
             DgramProto      *_dgproto;
             PFCodec         *_codec;
+            uint32_t        _catchtimeout{};
         public:
 
             Backend():_watchdog(Timeout(MAX(15*60, HEARTBEAT_TIMEOUT))),

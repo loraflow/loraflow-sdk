@@ -47,6 +47,9 @@ namespace haul {
         uint8_t get_type() override {
             return PKT_PUSH_DATA;
         }
+        int64_t age() override {
+            return (lang::os::mills() - _rxmills) / 1000;
+        }
         void fromDirect(const lgw_pkt_rx_s * const lgw_rxs, int nb_pkt);
         void fromRxInd(const RxInd &ind);
         bool fromJson(const Json &j);

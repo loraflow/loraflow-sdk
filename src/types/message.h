@@ -25,6 +25,10 @@ namespace haul {
         virtual uint8_t get_type() = 0;
         virtual ~Message() {}
         virtual int jsonize(uint8_t *buff) = 0;
+        //age of message in unit Second
+        virtual int64_t age() {
+            return 0;
+        };
         inline bool is_pf_message() {
             return get_type() <= PKT_AISENZ_MIN;
         }

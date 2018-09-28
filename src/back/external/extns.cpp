@@ -37,6 +37,8 @@ namespace haul {
                 exit(-1);
             }
 
+            _catchtimeout = lcf.system.catchtimeout;
+
             _servers.push(Url("tls", ext.url, 4882));
             _servers.push(Url("tcp", ext.url, 4881));
 
@@ -74,7 +76,7 @@ namespace haul {
                             switch (m->get_type()) {
                                 case PKT_CONACK:
                                 {
-                                    ConnAckMessage *ack = reinterpret_cast<ConnAckMessage *>(m);
+                                    auto ack = reinterpret_cast<ConnAckMessage *>(m);
                                     if (!ack->cause.empty()) {
                                         WARNF("disconnected cause {}", ack->cause);
                                         reconnect = true;
@@ -104,7 +106,7 @@ namespace haul {
                     if (ref) {
                         brokenVersion = ref->version;  //let writer thread notify broken pipe
                         _transports.close(ref);
-                        ref = NULL;
+                        ref = nullptr;
                     }
                     while (!ref) {
                         os::sleep_ms(500);
@@ -130,17 +132,22 @@ namespace haul {
 
             for (;;) {
                 while (true) {
-                    if (!transport) {
-                        break;
-                    }
                     if (_watchdog.expired()) {
                         WARNF("watchdog fired");
                         break;
                     }
-                    if (!pmsg && !(pmsg = _up->take(3000))) {
-                        if (brokenVersion == transport->version) {
+                    while (true) {
+                        if (!pmsg && !(pmsg = _up->take(3000))) {
                             break;
                         }
+                        if (pmsg->age() <= _catchtimeout) {
+                            break;
+                        }
+                        WARNF("message expired after {}s (max {} allowd)", pmsg->age(), _catchtimeout);
+                        pmsg = nullptr;
+                    }
+                    if (!transport || brokenVersion == transport->version) {
+                        break;
                     }
                     try {
                         if (pmsg) {
@@ -174,7 +181,7 @@ namespace haul {
                                 rxPushTimeout.refresh();
                             }
                         }
-                    } catch (BadConnection e) {
+                    } catch (const BadConnection &e) {
                         if (pmsg && pmsg->get_type() != PKT_PUSH_DATA) {  //Retransmit PUSHDATA ONLY
                             pmsg = nullptr;
                         }
@@ -197,7 +204,7 @@ namespace haul {
                 GUARD_END();
                 os::sleep_ms(1000 + random()%5000);
             }
-            while (!transport) {
+            for (int i=0; i<3 && !transport; i++) {
                 auto t = _transports.connect(_mac.to_string(), _servers);
                 if (!t) {
                     os::sleep_ms(1000);
