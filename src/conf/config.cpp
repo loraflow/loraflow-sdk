@@ -122,4 +122,12 @@ namespace conf {
         io::file((_confhome + _local_conf).c_str()).write(text);
         return ERR_OK;
     }
+
+    void Config::writeVersion(string fw, string hw,string md) {
+#define FW "fw"
+#define HW "hw"
+#define MDL "mdl"
+        lang::os::fwrite(string("/tmp/version"),
+                         strings::sprintf("{" "\"" FW "\":\"%s\",\n " "\"" HW "\":\"%s\",\n " "\"" MDL "\":\"%s\"\n" "}\n",fw.data(),hw.data(),md.data()));
+    }
 }

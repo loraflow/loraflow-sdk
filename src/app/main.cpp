@@ -26,8 +26,9 @@ int main(int argc, char **argv) {
     auto &cf = conf::INSTANCE;
 
     cf.init(argc, argv);
+    cf.writeVersion(os::version(),os::hwversion(),os::gwmodel());
 
-    PRINTF("starting nanohaul version {}...", os::version());
+    PRINTF("starting nanohaul version FW:{},HW:{},MDL:{}...", os::version().data(),os::hwversion().data(),os::gwmodel().data());
 
     if (cf.c_local().system.loglevel != "") {
         Log::set_level(cf.c_local().system.loglevel);

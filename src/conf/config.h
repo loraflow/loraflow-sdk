@@ -44,6 +44,7 @@ namespace conf {
         void applyChanges(bool reload=false);
         void reset();
         void changePasswd(const string passwd);
+        void writeVersion(string fw, string hw,string md);
 
     protected:
 

@@ -72,12 +72,34 @@ namespace lang {
         }
 
         inline string version() {
-#ifndef ASZVER
-#define ASZVER 0.0.0
+#ifndef FWVER
+#define FWVER 0.0.0
 #endif
 #define _xstr(a) _str(a)
 #define _str(a) #a
-            return _xstr(ASZVER);
+            return _xstr(FWVER);
+#undef _str
+#undef _xstr
+        }
+
+        inline string hwversion() {
+#ifndef HWVER
+#define HWVER 0.0.0
+#endif
+#define _xstr(a) _str(a)
+#define _str(a) #a
+            return _xstr(HWVER);
+#undef _str
+#undef _xstr
+        }
+
+        inline string gwmodel() {
+#ifndef GWMODEL
+#define GWMODEL ---
+#endif
+#define _xstr(a) _str(a)
+#define _str(a) #a
+            return _xstr(GWMODEL);
 #undef _str
 #undef _xstr
         }
