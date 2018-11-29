@@ -6,6 +6,7 @@
 #include <types/message.h>
 #include <conf/config.h>
 #include <router/stat-track.h>
+#include <conf/config.h>
 
 namespace haul {
     namespace extns {
@@ -196,6 +197,7 @@ namespace haul {
 
         void Backend::_renew_connection() {
 
+            conf::INSTANCE.writeConnection(false);
             if (transport) {
                 GUARD_BEGIN(_lock);
                     ERRORF("close tcp socket");
@@ -225,6 +227,7 @@ namespace haul {
                     _transports.close(t);
                 }
             }
+            conf::INSTANCE.writeConnection(true);
         }
     }
 }

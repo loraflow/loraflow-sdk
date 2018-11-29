@@ -127,7 +127,16 @@ namespace conf {
 #define FW "fw"
 #define HW "hw"
 #define MDL "mdl"
-        lang::os::fwrite(string("/tmp/version"),
-                         strings::sprintf("{" "\"" FW "\":\"%s\",\n " "\"" HW "\":\"%s\",\n " "\"" MDL "\":\"%s\"\n" "}\n",fw.data(),hw.data(),md.data()));
+        lang::os::fwrite(string("/tmp/.loraflow_info"),
+                         strings::sprintf("{" "\n\"" FW "\":\"%s\",\n " "\"" HW "\":\"%s\",\n " "\"" MDL "\":\"%s\"\n" "}\n",fw.data(),hw.data(),md.data()));
+    }
+
+    void Config::writeConnection(bool con) {
+#define TITLE "connection"
+#define CONN "online"
+#define DISCON "offline"
+
+        lang::os::fwrite(string("/tmp/.loraflow_state"),
+                         strings::sprintf("{" "\n\"" TITLE "\":\"%s\"\n " "}\n", con ? CONN : DISCON));
     }
 }
