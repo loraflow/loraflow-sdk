@@ -84,9 +84,6 @@ namespace haul {
                                     delete m;
                                     break;
                                 }
-                                case PKT_HEARTBEAT:
-                                    delete m;
-                                    break;
                                 default:
                                 {
                                     unique_ptr<Message> pr(m);

@@ -14,7 +14,7 @@
 #include "back-router.h"
 
 #ifndef CONFIG_ROUTER_WATCHDOG_TIMEOUT
-#define CONFIG_ROUTER_WATCHDOG_TIMEOUT  180
+#define CONFIG_ROUTER_WATCHDOG_TIMEOUT  900
 #endif
 
 namespace haul {
@@ -57,6 +57,11 @@ namespace haul {
                     {
                         PPullResp pr((PullResp*)pd.release());
                         _frouter->RoutePullResp(std::move(pr));
+                        break;
+                    }
+                    case PKT_HEARTBEAT:
+                    {
+                        DEBUGF("got hbeat");
                         break;
                     }
                     case PKT_AISENZ_DOWN:
