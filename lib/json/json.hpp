@@ -12921,8 +12921,14 @@ class basic_json
                             const parser_callback_t cb = nullptr,
                             const bool allow_exceptions = true)
     {
+
         basic_json result;
-        parser(i, cb, allow_exceptions).parse(true, result);
+        try {
+            parser(i, cb, allow_exceptions).parse(true, result);
+        } catch (...) {
+            return result;
+        }
+
         return result;
     }
 

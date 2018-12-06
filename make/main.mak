@@ -27,11 +27,13 @@ LIBROOT = lib
 
 INCLUDES += -I$(LIBROOT)/json
 INCLUDES += -I$(LIBROOT)/spdlog
+INCLUDES += -I$(LIBROOT)/http
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/include
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/sqlite3
 INCLUDES += -I$(LIBROOT)
 INCLUDES += -I$(SRCROOT)/app
 INCLUDES += -I$(SRCROOT)/back
+INCLUDES += -I$(SRCROOT)/core
 INCLUDES += -I$(SRCROOT)
 
 SRC += $(wildcard $(SRCROOT)/app/*.cpp)

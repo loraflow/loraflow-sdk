@@ -89,6 +89,13 @@ namespace lang {
                 return false;
             }
         }
+        template <class T> static T optional(const char* key, const Json& opt , T def) {
+            try {
+                return opt.at(key).get<T>();
+            } catch (...) {
+                return def;
+            }
+        }
 
         template <class T> T getdefault(const Json &opt, string key, T defval) {
             auto it = opt.find(key);
@@ -111,6 +118,22 @@ namespace lang {
                 }
             }
             return false;
+        }
+
+        template <class T> static bool attr(const Json &opt, const char* key, T& t) {
+            try {
+                t = opt.at(key).get<T>();
+                return true;
+            } catch (...) {
+                return false;
+            }
+        }
+        template <class T> static T attr(const Json &opt, const char* key) {
+            try {
+                return opt.at(key).get<T>();
+            } catch (...) {
+                return {};
+            }
         }
     }
 }

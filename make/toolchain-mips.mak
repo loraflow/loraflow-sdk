@@ -4,7 +4,7 @@
 ##   https://sourceware.org/binutils/docs/ld/index.html
 
 #### Setup ####
-TOOLCHAINDIR ?= ./toolchain/openwrt-mips/gcc4.9/bin
+TOOLCHAINDIR ?= ../toolchain/openwrt-mips/gcc4.9/bin
 TOOLCHAINPREFIX ?= $(TOOLCHAINDIR)/mipsel-openwrt-linux-
 
 #### Required Executables ####

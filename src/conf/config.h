@@ -46,7 +46,20 @@ namespace conf {
         void changePasswd(const string passwd);
         void writeVersion(string fw, string hw,string md);
         void writeConnection(bool con = false);
+/***********************************/
+        Json _conf;
+        const Json Get() const {
+            return _conf;
+        }
+        const Json GetUpdate() const {
+//            Json cfall = jsons::attr<Json>(_conf, "cnodes");
+//            return jsons::attr<Json>(cfall, "layer3");
+            return _conf;
+        }
+        bool SetUpdate(Json &update) {
 
+        }
+/***********************************/
     protected:
 
         Local       _local = {};

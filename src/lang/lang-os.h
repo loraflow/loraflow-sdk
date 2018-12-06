@@ -2,8 +2,8 @@
 // Created by Thinkpad on 2017/9/5.
 //
 
-#ifndef AICAST_BACKHAUL_LANG_H
-#define AICAST_BACKHAUL_LANG_H
+#ifndef _LANG_H
+#define _LANG_H
 
 #include <lang/constants.h>
 #include <cstdint>
@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <lang/lang-log.h>
 
 #define NUMELMNT(_a) (sizeof(_a)/sizeof(_a[0]))
 #define NUMCHAR(_a) (sizeof(_a) - sizeof(""))
@@ -37,25 +38,27 @@
 #endif
 
 #define __DATA_ALIGNED__      __attribute__ ((aligned (4)))
-
 using namespace std;
 
 namespace lang {
 
     namespace os {
 
-        using timepoint = std::chrono::high_resolution_clock::time_point;
+        using Timepoint = std::chrono::steady_clock::time_point;
 
         void exclusively(function<void(void)> fn);
 
-        inline timepoint now() {
-            return std::chrono::high_resolution_clock::now();
+        inline Timepoint now() {
+            return std::chrono::steady_clock::now();
         }
         inline int64_t mills(void) {
             //return now().time_since_epoch().count();
             return chrono::duration_cast<chrono::milliseconds >(
                     chrono::system_clock::now().time_since_epoch()
             ).count();
+        }
+        inline int64_t mills_since(const Timepoint &tp) {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(now() - tp).count();
         }
         inline time_t micros(void) {
             struct timeval tm;

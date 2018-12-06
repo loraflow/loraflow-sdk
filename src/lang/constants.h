@@ -2,8 +2,8 @@
 // Created by Thinkpad on 2017/9/6.
 //
 
-#ifndef AICAST_BACKHAUL_CONSTANTS_H
-#define AICAST_BACKHAUL_CONSTANTS_H
+#ifndef _CONSTANTS_H
+#define _CONSTANTS_H
 
 #define DGRAM_SIZE_BIG 65507
 #define DGRAM_TIMEOUT_MILLS 1000
@@ -36,5 +36,12 @@
 #ifndef CONFIG_HEAP_KBYTES
 #define CONFIG_HEAP_KBYTES 10240
 #endif
-
+#define ErrOK       "OK"
+#define ErrTODO     "TODO"
+#define ErrMEM      "MEM"
+#define ErrIGN      "IGN"
+#define ErrBusy     "Busy"
+#define ErrProto    "Proto"
+#define ErrPublish  "Publish"
+#define ErrBadJSON  "BadJSON"
 #endif //AICAST_BACKHAUL_CONSTANTS_H
