@@ -41,6 +41,7 @@ namespace haul {
             Transports      _transports;
             DgramProto      *_dgproto;
             PFCodec         *_codec;
+            std::string     _ipaddrs;
             uint32_t        _catchtimeout{};
         public:
 
