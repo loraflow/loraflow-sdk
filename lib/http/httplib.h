@@ -829,6 +829,7 @@ inline bool read_content_with_length(Stream& strm, std::string& out, size_t len,
 
 inline bool read_content_without_length(Stream& strm, std::string& out)
 {
+    static bool startRev = false;
     for (;;) {
         char byte;
         auto n = strm.read(&byte, 1);
@@ -836,22 +837,28 @@ inline bool read_content_without_length(Stream& strm, std::string& out)
             if (errno == EAGAIN || errno == EINPROGRESS || errno == EINTR) {
                 INFOF("接收完毕...over");
                 hythread::stopCountThread();
-                hylength = 0;
+                startRev = false;
                 return true;
             } else {
                 INFOF("有错误发生...:({})",errno);
                 return false;
             }
         }else if (n == 0) {
-            INFOF("正在结束...{}",out);
+            INFOF("正在结束...");
             hythread::stopCountThread();
-            hylength = 0;
+            startRev = false;
             return true;
         }
-        hythread::startCountThread();
+        if (!startRev) {
+            startRev = true;
+            hylength = 0;
+        }
         out += byte;
         hylength++;
-//        INFOF("正在接收...{}",hylength);
+        hythread::startCountThread();
+//        if(hylength < 100) {
+//            INFOF("正在接收...({}):({})",hylength,byte);
+//        }
     }
 
     return true;
@@ -1599,7 +1606,7 @@ inline void Server::write_response(socket_t sock,int len) {
     SocketStream strm(sock);
     para.res.status = 200;
     para.res.body = strings::sprintf("{" "\n\"" LENGTH "\":\"%d %d\"\n " "}\n", len,time);
-    INFOF(">>>>>>>>>>>>>>>----{}:{}:{}",para.res.body,sock,time);
+//    INFOF(">>>>>>>>>>>>>>>----{}:{}:{}",para.res.body,sock,time);
     time++;
     para.res.set_content(para.res.body, "text/plain");
     write_response(strm,false,para.req,para.res);
@@ -1679,7 +1686,7 @@ inline void Server::write_response(Stream& strm, bool last_connection, const Req
 
     // Log
     if (logger_) {
-        logger_(req, res);
+//        logger_(req, res);
     }
 }
 
@@ -1905,24 +1912,15 @@ inline bool Server::process_request(Stream& strm, bool last_connection, bool& co
         if (!content_type.find("application/x-www-form-urlencoded")) {
             detail::parse_query_text(req.body, req.params);
         } else if(!content_type.find("multipart/form-data")) {
-            Json form = Json::parse(req.body);
-            bool valid = false;
-            if (!form.empty()) {
-                string s1 = jsons::optional<string>("content",form, "no value");
-                if (s1 != "no value") {
-                    valid = true;
-                    req.body = s1;
-                }
-            }
-            std::string boundary;
-            if (!valid ) {
-                if (!detail::parse_multipart_boundary(content_type, boundary) ||
-                    !detail::parse_multipart_formdata(boundary, req.body, req.files)) {
-                    res.status = 400;
-                    write_response(strm, last_connection, req, res);
-                    return ret;
-                }
-            }
+//            std::string boundary;
+//            if (!valid ) {
+//                if (!detail::parse_multipart_boundary(content_type, boundary) ||
+//                    !detail::parse_multipart_formdata(boundary, req.body, req.files)) {
+//                    res.status = 400;
+//                    write_response(strm, last_connection, req, res);
+//                    return ret;
+//                }
+//            }
 
         }
     }
@@ -1936,7 +1934,7 @@ inline bool Server::process_request(Stream& strm, bool last_connection, bool& co
     }
 
     PRINTF("CURL:{}",req.path.data());
-    INFOF("正在发送回复...");
+    INFOF("正在发送回复...{}",res.status);
 
     write_response(strm, last_connection, req, res);
     return ret;

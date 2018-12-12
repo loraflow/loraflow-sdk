@@ -12,24 +12,20 @@
 #include <conf/config.h>
 #include <conf/conf-etc.h>
 #include <version.hpp>
+#include <hythread.h>
 
 #define CTYPE_JSON "application/json"
 #define CTYPE_TEXT "text/plain"
 
-#ifndef CONFIG_LOG_FILE
-#define CONFIG_LOG_FILE  "/tmp/messages"
-#endif
-#ifndef CONFIG_UPGRADE_FILE
-#define CONFIG_UPGRADE_FILE  "./www/send/loralan_upgrade.zip"
-#endif
 #ifndef CONFIG_LOG_SIZE
 #define CONFIG_LOG_SIZE  512000
 #endif
-#ifndef CONFIG_WEBROOT
-#define CONFIG_WEBROOT  "./www"
-#endif
+#define RESULT_GET "Result"
+#define RESULT_OK "OK"
+#define RESULT_FAILED "ERROR"
 using Timepoint = std::chrono::steady_clock::time_point;
 using namespace lang;
+using namespace httplib;
 struct Cnode{
     int name = 1;
 };
@@ -87,7 +83,43 @@ std::string base64_decode(std::string const& encoded_string) {
 }
 
 
+static void parseWebGetRequest(const Request &req, Response &res) {
+    TEST("req:path{} ({})",req.path,req.body);
+    Json form = Json::parse(req.body);
+    if (!form.empty()) {
+        string name = jsons::optional<string>("name", form, "NO");
+        string path = jsons::optional<string>("path", form, "NO");
+        if(name != "NO" && path != "NO" ) {
+            INFOF("PATH GET IS : ({})",path + "/" + name);
+            string result = lang::os::fread(path + "/" + name);
+            res.set_content(result, CTYPE_JSON);
+            return;
+        }
+    }
+    string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_FAILED);
+    res.set_content(test, CTYPE_JSON);
+}
 
+static void parseWebPostRequest(const Request &req, Response &res) {
+    TEST("req:path{}",req.path);
+    string result = "Bad Request";
+    Json form = Json::parse(req.body);
+    if (!form.empty()) {
+        string content = jsons::optional<string>("content", form, "NO");
+        string name = jsons::optional<string>("name", form, "NO");
+        string path = jsons::optional<string>("path", form, "NO");
+        if(content != "NO" && name != "NO" && path != "NO" ) {
+            result = "OK";
+//            std::fstream dst1(path + "/" + name);
+//            mkdir(path.c_str(),0777);  //不管文件夹是否存在，都进行创建操作
+            lang::os::fwrite(path + "/" + name,content);
+//            dst1.close();
+//            res.set_content(result, CTYPE_JSON);
+        }
+    }
+    string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",result == "OK" ? RESULT_OK:RESULT_FAILED);
+    res.set_content(test, CTYPE_JSON);
+}
 
 
 class WebAPI {
@@ -99,8 +131,11 @@ class WebAPI {
             } while(0)
 
     httplib::Server svr;
-    bool _authorized = true;
+    bool _authorized = false;
     const Timepoint _uptime;
+    int currentTotalLen ;
+    enum UPGRADE_STATUS : uint8_t {UPGRADE_START,UPGRADE_FAILED,UPGRADE_SUCCESS,UPGRADE_MAX};
+    UPGRADE_STATUS upgradeSuccess = UPGRADE_START;
 
 public:
     WebAPI():_uptime(lang::os::now()) {}
@@ -109,204 +144,198 @@ public:
         return svr.is_running();
     }
 
+    void setUpgardeSuccess() {
+        upgradeSuccess = UPGRADE_SUCCESS;
+    }
+
+    void setUpgradeFailed() {
+        upgradeSuccess = UPGRADE_FAILED;
+    }
+
+    void setUpgradeStart() {
+        upgradeSuccess = UPGRADE_START;
+    }
+
     void Bind(const std::map<string, Cnode *> &nodesmap, const string &host, int port) {
-        using namespace httplib;
 
-//        svr.Get("/", [&](const Request &req, Response &res) {
-//            string html = lang::os::fread(string(CONFIG_WEBROOT) + "/index.html");
-//            res.set_content(html, CTYPE_TEXT);
-//        });
-        /*+ADD Start+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-        svr.Get("/test", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/hytest/test.txt");
-            res.set_content(test, CTYPE_TEXT);
+        svr.Post("/type=local_get", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
         });
 
-        svr.Get("/type=local", [&](const Request &req, Response &res) {
+        svr.Post("/type=global_get", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
+        });
+        svr.Post("/type=log_get", [&](const Request &req, Response &res) {
+            Json form = Json::parse(req.body);
+            if (!form.empty()) {
+                string name = jsons::optional<string>("name", form, "NO");
+                string path = jsons::optional<string>("path", form, "NO");
+                if(name != "NO" && path != "NO" ) {
+                    INFOF("PATH GET IS : ({})",path + "/" + name);
+//                    string result = lang::os::fread(path + "/" + name);
+                    string result = "暂时先这样，我一会儿改 ：）";
+                    res.set_content(result, CTYPE_JSON);
+                }
+            }
+        });
+        svr.Post("/type=network_get", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
+        });
+        svr.Post("/type=ntp_get", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
+        });
+        svr.Post("/type=state", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
+        });
+        svr.Post("/type=info", [&](const Request &req, Response &res) {
+            parseWebGetRequest(req, res);
+        });
+        svr.Get("/type=rate", [&](const Request &req, Response &res) {
             TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/local_conf.json");
+#define RATE "rate"
+            INFOF("RATE:({}:{})",currentTotalLen,hylength);
+            int rate = 0;
+            if (upgradeSuccess == UPGRADE_SUCCESS) {
+                rate = 100;
+            }else if (upgradeSuccess == UPGRADE_FAILED){
+                rate = -1;
+            }else if (hylength >= currentTotalLen ) {
+                rate = 50;
+            }else {
+                rate = (int)((double)(hylength*100)/(double)currentTotalLen);
+                rate = rate > 50 ? 50 : rate;
+            }
+            string test = strings::sprintf("{" "\n\"" RATE "\":\"%d\" \n" "}\n",rate);
             res.set_content(test, CTYPE_JSON);
         });
-
-        svr.Get("/type=global", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/global_conf.json");
-            res.set_content(test, CTYPE_JSON);
-        });
-        svr.Get("/type=log", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/log.txt");
-            res.set_content(test, CTYPE_TEXT);
-        });
-        svr.Get("/type=network", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/network");
-            res.set_content(test, CTYPE_TEXT);
-        });
-        svr.Get("/type=ntp", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/NTP.txt");
-            res.set_content(test, CTYPE_TEXT);
-        });
-        svr.Get("/type=state", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/state.json");
-            res.set_content(test, CTYPE_JSON);
-        });
-        svr.Get("/type=info", [&](const Request &req, Response &res) {
-            TEST("req:path{}",req.path);
-            string test = lang::os::fread("./www/send/info.json");
-            res.set_content(test, CTYPE_JSON);
-        });
-        //http://192.168.31.195:8000/type=upgrade/name=upgrade.zip/size=9342
-//        svr.Post("/type=upgrade/name=upgrade.zip/size=9342", [&](const Request &req, Response &res) {
         svr.Post("/type=upgrade", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
             //decode Base64
             INFOF("start decode Base64 : Matches::({});({})",req.matches[1],req.matches[2]);
             string result = "Bad Request";
-            bool valid = false;
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    INFOF("start decode Base64");
-                    lang::os::fwrite(CONFIG_UPGRADE_FILE, base64_decode(req.body.substr(file.offset, file.length)));
-                    result = "OK";
-                    valid = true;
-                    break;
-                }
-            }
-            if (!valid && !req.body.empty()) {
+            if (!req.body.empty()) {
                 INFOF("start decode Base64");
-                lang::os::fwrite(CONFIG_UPGRADE_FILE, base64_decode(req.body));
-                result = "OK";
+                Json form = Json::parse(req.body);
+                if (!form.empty()) {
+                    string content = jsons::optional<string>("content",form, "NO");
+                    string name = jsons::optional<string>("name",form, "NO");
+                    string path = jsons::optional<string>("path",form, "NO");
+                    if (content != "NO" && name != "NO" && path != "NO" ) {
+
+                        INFOF("START FILE OPERATION");
+                        std::fstream dst1;
+                        mkdir(path.c_str(),0777);
+                        lang::os::fwrite(path + "/" + name, base64_decode(content));
+                        dst1.close();
+                        INFOF("STOP FILE OPERATION");
+                        result = "OK";
+                        upgradeSuccess = UPGRADE_START;
+                    }
+                    INFOF("Upgrade name({}):path({})",name,path);
+                }
             }
-            INFOF("start decode Base64");
             INFOF("RESULT:{}",result);
-            res.set_content(result, CTYPE_TEXT);
+            string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",result == "OK" ? RESULT_OK:RESULT_FAILED);
+            res.set_content(test, CTYPE_JSON);
         });
 
-        svr.Post("/type=local", [&](const Request &req, Response &res) {
+        svr.Post("/type=local_post", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/local_conf.json", req.body.substr(file.offset, file.length));
-                    result = "OK";
-                    break;
-                }
-            }
-            res.set_content(result, CTYPE_TEXT);
+            parseWebPostRequest(req,res);
         });
 
-        svr.Post("/type=global", [&](const Request &req, Response &res) {
+        svr.Post("/type=global_post", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/global_conf.json", req.body.substr(file.offset, file.length));
-                    result = "OK";
-                    break;
-                }
-            }
-            res.set_content(result, CTYPE_TEXT);
+            parseWebPostRequest(req,res);
         });
 
-        svr.Post("/type=network", [&](const Request &req, Response &res) {
+        svr.Post("/type=network_post", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/network", req.body.substr(file.offset, file.length));
-                    result = "OK";
-                    break;
-                }
-            }
-            res.set_content(result, CTYPE_TEXT);
+            parseWebPostRequest(req,res);
         });
 
-        svr.Post("/type=info", [&](const Request &req, Response &res) {
+        svr.Post("/type=log_post", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/info.json", req.body.substr(file.offset, file.length));
-                    result = "OK";
-                    break;
-                }
-            }
-            res.set_content(result, CTYPE_TEXT);
+            parseWebPostRequest(req,res);
         });
 
-        svr.Post("/type=log", [&](const Request &req, Response &res) {
+        svr.Post("/type=ntp_post", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/log.txt", req.body.substr(file.offset, file.length));
-                    result = "OK";
-                    break;
-                }
-            }
-            res.set_content(result, CTYPE_TEXT);
+            parseWebPostRequest(req,res);
         });
 
-        svr.Post("/type=ntp", [&](const Request &req, Response &res) {
+        svr.Post("/type=size", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
             string result = "Bad Request";
-            for (auto &f : req.files) {
-                auto &file = f.second;
-                if (file.length > 0) {
-                    lang::os::fwrite("./www/send/NTP.txt", req.body.substr(file.offset, file.length));
+            INFOF("size BODY is {}",req.body);
+            Json form = Json::parse(req.body);
+            if (!form.empty()) {
+                int hysize = jsons::optional<int>("size",form, -1);
+                if (hysize != -1) {
                     result = "OK";
-                    break;
                 }
+                currentTotalLen = hysize;
+                INFOF("Upgrade size({})",currentTotalLen);
             }
-            res.set_content(result, CTYPE_TEXT);
+            string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",result == "OK" ? RESULT_OK:RESULT_FAILED);
+            res.set_content(test, CTYPE_JSON);
         });
 
         svr.Post("/type=reset", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
+            MUST_AUTHORIZED();
             INFOF("RESET OK");
-            res.set_content("OK", CTYPE_TEXT);
-//            lang::os::sleep_ms(1000);
-//            exit(0);
+            string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_OK);
+            res.set_content(test, CTYPE_JSON);
+            lang::os::sleep_ms(1000);
+            exit(0);
         });
 
-
+#define ON_USER "username"
+#define ON_LOGIN "login"
+#define ON_ERROR "failed"
+#define ON_SUCCESS "success"
 
         svr.Post("/type=changepwd", [&](const Request &req, Response &res) {
             MUST_AUTHORIZED();
-            //todo 先验证原密码是否正确
-            string userinfo = lang::os::fread("./www/send/login.json");
+            //先验证原密码是否正确
+            string name;
+            string path;
+            string content;
+
+            Json form = Json::parse(req.body);
+            if (!form.empty()) {
+                content = jsons::optional<string>("content", form, "NO");
+                name = jsons::optional<string>("name", form, "NO");
+                path = jsons::optional<string>("path", form, "NO");
+                if(content == "NO" || name == "NO" || path == "NO" ) {
+                    string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_FAILED);
+                    res.set_content(test, CTYPE_JSON);
+                    return ;
+                }
+            }
+
+            string userinfo = lang::os::fread(path + "/" + name);
             Json info = Json::parse(userinfo);
             string username = jsons::optional<string>("username", info, "admin");
             string password = jsons::optional<string>("password", info, "123456");
-            string result("OK");
-            if (!password.empty() && req.body.size() != 0) {
-                Json form = Json::parse(req.body);
+            string result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_SUCCESS);;
+            if (!password.empty() && content.size() != 0) {
+                Json form = Json::parse(content);
                 string s1 = jsons::optional<string>("username",form, "");
                 string s2 = jsons::optional<string>("old",form, "");
                 string s3 = jsons::optional<string>("new",form, "");
                 if (s1 != username || s2 != password) {
-                    result = "Bad username or password";
+                    result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
                 }else {
                     string on_info;
                     on_info.clear();
 #define USER "username"
 #define PWD  "password"
-                    lang::os::fwrite("./www/send/login.json", strings::sprintf("{" "\n\"" USER "\":\"%s\",\n " "\"" PWD "\":\"%s\"\n" "}\n",s1.data(),s3.data()));
+                    lang::os::fwrite(path + "/" + name, strings::sprintf("{" "\n\"" USER "\":\"%s\",\n " "\"" PWD "\":\"%s\"\n" "}\n",s1.data(),s3.data()));
                 }
             }else {
-                result = "EMPTY username or Password ";
+                result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
             }
-//            _authorized = result == "OK";
             res.set_content(result, CTYPE_TEXT);
         });
 
@@ -314,30 +343,60 @@ public:
 
         /*+ADD End++++++++++++++++++++++++++++++++++++  +++++++++++++++++++++++++++++++*/
         svr.Post("/type=logout", [&](const Request &req, Response &res) {
-//            _authorized = false;
             INFOF("LOGIN OUT");
-            res.set_content("OK", CTYPE_TEXT);
+            string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_OK);
+            res.set_content(test, CTYPE_JSON);
         });
         svr.Post("/type=login", [&](const Request &req, Response &res) {
-            INFOF("LOGIN IN");
-            string userinfo = lang::os::fread("./www/send/login.json");
-            Json info = Json::parse(userinfo);
-            string username = jsons::optional<string>("username", info, "admin");
-            string password = jsons::optional<string>("password", info, "123456");
-            INFOF("user:{}",username);
-            INFOF("pwd:{}",password);
-            string result("OK");
-            if (!password.empty() && req.body.size() != 0) {
-                Json form = Json::parse(req.body);
-                string s1 = jsons::optional<string>("username",form, "");
-                string s2 = jsons::optional<string>("password",form, "");
-                if (s1 != username || s2 != password) {
-                    result = "Bad username or password";
+            string name;
+            string path;
+            string content;
+            bool login = false;
+            INFOF("BAD REQUEST : --> ({})",req.body);
+            Json form = Json::parse(req.body);
+            if (!form.empty()) {
+                content = jsons::optional<string>("content", form, "NO");
+                name = jsons::optional<string>("name", form, "NO");
+                path = jsons::optional<string>("path", form, "NO");
+                if(content == "NO" || name == "NO" || path == "NO" ) {
+                    INFOF("BAD REQUEST : --> ({})({})({})",content,name,path);
+                    string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_FAILED);
+                    res.set_content(test, CTYPE_JSON);
+                    return ;
                 }
-            }else {
-                result = "EMPTY username or Password ";
             }
-//            _authorized = result == "OK";
+            string userinfo = lang::os::fread(path + "/" + name);
+            INFOF("userinfo:({})",userinfo);
+            string result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_SUCCESS);;
+            if (userinfo.empty()) {
+                result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
+                res.status = 400;
+                INFOF("Login Result:({})","EMPTY Info File ");
+            }else {
+                Json info = Json::parse(userinfo);
+                string username = jsons::optional<string>("username", info, "admin");
+                string password = jsons::optional<string>("password", info, "123456");
+                INFOF("user:{}",username);
+                INFOF("pwd:{}",password);
+                if (!password.empty() && content.size() != 0) {
+                    Json form = Json::parse(content);
+                    string s1 = jsons::optional<string>("username",form, "");
+                    string s2 = jsons::optional<string>("password",form, "");
+                    if (s1 != username || s2 != password) {
+                        result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
+                        res.status = 400;
+                        INFOF("Login Result:({})","Bad username or password");
+                    }else {
+                        result = strings::sprintf("{" "\n\"" ON_USER "\":\"%s\",\n " "\"" ON_LOGIN "\":\"%s\"\n" "}\n",username.data(),ON_SUCCESS);
+                        login = true;
+                    }
+                }else {
+                    result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
+                    res.status = 200;
+                    INFOF("Login Result:({})","EMPTY username or Password ");
+                }
+            }
+            _authorized = login;
             res.set_content(result, CTYPE_TEXT);
         });
 //        svr.Get("/v1/config", [&](const Request &req, Response &res) {
@@ -381,16 +440,16 @@ public:
 //        svr.Get("/v1/logs/level", [&](const Request &req, Response &res) {
 //            res.set_content(Log::get_level(), CTYPE_TEXT);
 //        });
-        svr.Post(R"(/v1/logs/level/(\w+))", [&](const Request &req, Response &res) {
-            MUST_AUTHORIZED();
-            string level = req.matches[1];
-            Log::set_level(level);
-            if (Log::get_level() != level) {
-                reply_err(res, "bad level");
-            } else {
-                res.set_content("OK", CTYPE_TEXT);
-            }
-        });
+//        svr.Post(R"(/v1/logs/level/(\w+))", [&](const Request &req, Response &res) {
+//            MUST_AUTHORIZED();
+//            string level = req.matches[1];
+//            Log::set_level(level);
+//            if (Log::get_level() != level) {
+//                reply_err(res, "bad level");
+//            } else {
+//                res.set_content("OK", CTYPE_TEXT);
+//            }
+//        });
 //        svr.Get("/v1/info", [&](const Request &req, Response &res) {
 //            Json info = {
 //                    {"gwtype", versions::GatewayType()},
@@ -462,7 +521,6 @@ public:
             INFOF("{} {} {} {}", req.method, res.status, req.path, req.version); // NOLINT(bugprone-lambda-function-name)
         });
 
-        svr.set_base_dir(CONFIG_WEBROOT);
         svr.listen(host.c_str(), port);
 
         INFOF("bind hmi at {}:{}", host, port);
