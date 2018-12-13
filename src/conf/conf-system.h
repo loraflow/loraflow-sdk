@@ -46,7 +46,7 @@ namespace conf {
         int32_t         udplisten = 1680;
         int32_t         pfwatchttl = 4200;
         string          pfwatchcmd = "systemctl restart lrgateway";
-        uint32_t        catchtimeout = 0;   //for how long will message be kept in case of network failure (in seconds)
+        uint32_t        cachetimeout = 180;   //for how long will message be kept in case of network failure (in seconds)
 
         errors::ErrStatus load(const Json &j) {
             jsons::optional(j, "gateway_ID", gatewayID);
@@ -66,7 +66,7 @@ namespace conf {
             jsons::optional(j, "compatible_pfv02", compatible_pfv02);
             jsons::optional(j, "muteled", muteled);
             jsons::optional(j, "ulnwk", ulnwk);
-            jsons::optional(j, "catchtimeout", catchtimeout);
+            jsons::optional(j, "cachetimeout", cachetimeout);
             std::transform(gatewayID.begin(), gatewayID.end(), gatewayID.begin(), ::tolower);
             return errors::ERR_OK;
         }

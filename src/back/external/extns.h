@@ -42,7 +42,7 @@ namespace haul {
             DgramProto      *_dgproto;
             PFCodec         *_codec;
             std::string     _ipaddrs;
-            uint32_t        _catchtimeout{};
+            uint32_t        _cachetimeout{};
         public:
 
             Backend():_watchdog(Timeout(MAX(15*60, HEARTBEAT_TIMEOUT))),
