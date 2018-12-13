@@ -37,7 +37,7 @@ namespace haul {
                 exit(-1);
             }
 
-            _catchtimeout = lcf.system.catchtimeout;
+            _cachetimeout = lcf.system.cachetimeout;
 
             _servers.push(Url("tls", ext.url, 4882));
             _servers.push(Url("tcp", ext.url, 4881));
@@ -137,10 +137,10 @@ namespace haul {
                         if (!pmsg && !(pmsg = _up->take(3000))) {
                             break;
                         }
-                        if (pmsg->age() <= _catchtimeout) {
+                        if (pmsg->age() <= _cachetimeout) {
                             break;
                         }
-                        WARNF("message expired after {}s (max {} allowd)", pmsg->age(), _catchtimeout);
+                        WARNF("message expired after {}s (max {} allowd)", pmsg->age(), _cachetimeout);
                         pmsg = nullptr;
                     }
                     if (!transport || brokenVersion == transport->version) {
