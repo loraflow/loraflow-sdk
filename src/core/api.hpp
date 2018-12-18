@@ -351,7 +351,7 @@ public:
             string name;
             string path;
             string content;
-            bool login = false;
+//            bool login = false;
             INFOF("BAD REQUEST : --> ({})",req.body);
             Json form = Json::parse(req.body);
             if (!form.empty()) {
@@ -388,7 +388,7 @@ public:
                         INFOF("Login Result:({})","Bad username or password");
                     }else {
                         result = strings::sprintf("{" "\n\"" ON_USER "\":\"%s\",\n " "\"" ON_LOGIN "\":\"%s\"\n" "}\n",username.data(),ON_SUCCESS);
-                        login = true;
+//                        login = true;
                     }
                 }else {
                     result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
