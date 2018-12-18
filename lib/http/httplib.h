@@ -1606,7 +1606,6 @@ inline void Server::write_response(socket_t sock,int len) {
     SocketStream strm(sock);
     para.res.status = 200;
     para.res.body = strings::sprintf("{" "\n\"" LENGTH "\":\"%d %d\"\n " "}\n", len,time);
-//    INFOF(">>>>>>>>>>>>>>>----{}:{}:{}",para.res.body,sock,time);
     time++;
     para.res.set_content(para.res.body, "text/plain");
     write_response(strm,false,para.req,para.res);
@@ -1767,6 +1766,7 @@ inline bool Server::listen_internal()
 
         if (val == 0) { // Timeout
             if (svr_sock_ == INVALID_SOCKET) {
+                ERRORF("BAD sokcet : ({})",svr_sock_);
                 // The server socket was closed by 'stop' method.
                 break;
             }
@@ -1777,6 +1777,7 @@ inline bool Server::listen_internal()
 
         if (sock == INVALID_SOCKET) {
             if (svr_sock_ != INVALID_SOCKET) {
+                ERRORF("BAD sokcet : ({})",svr_sock_);
                 detail::close_socket(svr_sock_);
                 ret = false;
             } else {

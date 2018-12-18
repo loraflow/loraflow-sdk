@@ -103,11 +103,23 @@ namespace lang {
             std::ifstream in(name);
             stringstream sstr;
             sstr << in.rdbuf();
+            in.close();
+            return sstr.str();
+        }
+        string ftail(const string &name,int bytes) {
+            std::ifstream in(name);
+            in.seekg(0,ios::end);
+            streampos sp = in.tellg();
+            in.seekg(-MIN(bytes,(int)sp),ios::end);
+            stringstream sstr;
+            sstr << in.rdbuf();
+            in.close();
             return sstr.str();
         }
         void fwrite(const string &name, const string &data) {
             std::ofstream dst(name);
             dst << data;
+            dst.close();
         }
         bool fcopy(string dst, string src, bool ovwr) {
             bool touch = false;

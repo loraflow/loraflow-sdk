@@ -8,8 +8,6 @@
 #include <thread>
 extern int hylength;
 namespace hythread{
-
-    std::thread& createThread();
     void startCountThread();
     void stopCountThread();
 }

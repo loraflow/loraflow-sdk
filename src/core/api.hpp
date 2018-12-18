@@ -23,6 +23,7 @@
 #define RESULT_GET "Result"
 #define RESULT_OK "OK"
 #define RESULT_FAILED "ERROR"
+#define LOG_SIZE (1000*1024)
 using Timepoint = std::chrono::steady_clock::time_point;
 using namespace lang;
 using namespace httplib;
@@ -131,7 +132,7 @@ class WebAPI {
             } while(0)
 
     httplib::Server svr;
-    bool _authorized = false;
+    bool _authorized = true;
     const Timepoint _uptime;
     int currentTotalLen ;
     enum UPGRADE_STATUS : uint8_t {UPGRADE_START,UPGRADE_FAILED,UPGRADE_SUCCESS,UPGRADE_MAX};
@@ -172,9 +173,8 @@ public:
                 string path = jsons::optional<string>("path", form, "NO");
                 if(name != "NO" && path != "NO" ) {
                     INFOF("PATH GET IS : ({})",path + "/" + name);
-//                    string result = lang::os::fread(path + "/" + name);
-                    string result = "暂时先这样，我一会儿改 ：）";
-                    res.set_content(result, CTYPE_JSON);
+                    string result1 = lang::os::ftail(path + "/" + name, LOG_SIZE);
+                    res.set_content(result1, CTYPE_JSON);
                 }
             }
         });
@@ -287,7 +287,7 @@ public:
             string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_OK);
             res.set_content(test, CTYPE_JSON);
             lang::os::sleep_ms(1000);
-            exit(0);
+            lang::os::reboot();
         });
 
 #define ON_USER "username"
@@ -370,7 +370,7 @@ public:
             string result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_SUCCESS);;
             if (userinfo.empty()) {
                 result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
-                res.status = 400;
+                res.status = 200;
                 INFOF("Login Result:({})","EMPTY Info File ");
             }else {
                 Json info = Json::parse(userinfo);
@@ -384,7 +384,7 @@ public:
                     string s2 = jsons::optional<string>("password",form, "");
                     if (s1 != username || s2 != password) {
                         result = strings::sprintf("{" "\n\"" ON_LOGIN "\":\"%s\" \n" "}\n", ON_ERROR);
-                        res.status = 400;
+                        res.status = 200;
                         INFOF("Login Result:({})","Bad username or password");
                     }else {
                         result = strings::sprintf("{" "\n\"" ON_USER "\":\"%s\",\n " "\"" ON_LOGIN "\":\"%s\"\n" "}\n",username.data(),ON_SUCCESS);
@@ -396,124 +396,14 @@ public:
                     INFOF("Login Result:({})","EMPTY username or Password ");
                 }
             }
-            _authorized = login;
+//            _authorized = login;
             res.set_content(result, CTYPE_TEXT);
         });
-//        svr.Get("/v1/config", [&](const Request &req, Response &res) {
-//            auto cf = conf::INSTANCE.GetUpdate();
-//            res.set_content(cf.dump(), CTYPE_JSON);
-//        });
-//        svr.Post("/v1/config", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            Json update = Json::parse(req.body);
-//            if (conf::INSTANCE.SetUpdate(update)) {
-//                res.set_content("OK", CTYPE_TEXT);
-//            } else {
-//                res.set_content("Bad Request", CTYPE_TEXT);
-//            }
-//        });
-//        svr.Delete("/v1/logs", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-////            truncate(CONFIG_LOG_FILE, 0);
-//            res.set_content("OK", CTYPE_TEXT);
-//        });
-//        svr.Get("/v1/logs", [&](const Request &req, Response &res) {
-//            FILE *fp;
-//            if ((fp = fopen(CONFIG_LOG_FILE, "rb")) == nullptr) {
-//                res.set_content("---", CTYPE_TEXT);
-//            } else {
-//                fseek(fp, 0L, SEEK_END);
-//                long fileSize = ftell(fp);
-//                char buf[CONFIG_LOG_SIZE+1];
-//                if (fileSize < (long)sizeof(buf)) {
-//                    fseek(fp, 0L, SEEK_SET);
-//                } else {
-//                    fseek(fp, 1-sizeof(buf), SEEK_END);
-//                }
-//                long bytesRead = fread(buf, 1, sizeof(buf)-1, fp);
-//                buf[MAX(bytesRead, sizeof(buf)-1)] = 0;
-//                fclose(fp);
-//                res.set_content(buf, CTYPE_TEXT);
-//            }
-//        });
-//
-//        svr.Get("/v1/logs/level", [&](const Request &req, Response &res) {
-//            res.set_content(Log::get_level(), CTYPE_TEXT);
-//        });
-//        svr.Post(R"(/v1/logs/level/(\w+))", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            string level = req.matches[1];
-//            Log::set_level(level);
-//            if (Log::get_level() != level) {
-//                reply_err(res, "bad level");
-//            } else {
-//                res.set_content("OK", CTYPE_TEXT);
-//            }
-//        });
-//        svr.Get("/v1/info", [&](const Request &req, Response &res) {
-//            Json info = {
-//                    {"gwtype", versions::GatewayType()},
-//                    {"fwver", versions::FWVer()},
-//                    {"hwver", versions::HWVer()},
-//                    {"uptime", lang::os::mills_since(_uptime)/1000},
-//            };
-//            Json nodes{};
-//            for (auto kv : nodesmap) {
-////                nodes[kv.first] = kv.second->Status();
-//            }
-//            info["nodes"] = nodes;
-//            res.set_content(info.dump(), CTYPE_JSON);
-//        });
-//        svr.Get("/v1/radios", [&](const Request &req, Response &res) {
-//            std::list<Json> list;
-//            for (auto kv : nodesmap) {
-////                list.push_back(kv.second->Radio());
-//            }
-//            res.set_content(Json(list).dump(), CTYPE_JSON);
-//        });
-//        svr.Post("/v1/reset", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            res.set_content("OK", CTYPE_TEXT);
-//            lang::os::sleep_ms(1000);
-//            exit(0);
-//        });
-//        svr.Get("/v1/ethernet", [&](const Request &req, Response &res) {
-//            res.set_content(doGetEthernet().dump(), CTYPE_JSON);
-//        });
-//        svr.Post("/v1/ethernet", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            doPostEthernet(Json::parse(req.body));
-//            res.set_content("OK", CTYPE_TEXT);
-//        });
-//        svr.Post("/v1/upgrade", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            string result = "Bad Request";
-//            for (auto &f : req.files) {
-//                auto &file = f.second;
-//                if (file.length > 0) {
-//                    lang::os::fwrite(CONFIG_UPGRADE_FILE, req.body.substr(file.offset, file.length));
-//                    result = "OK";
-//                    break;
-//                }
-//            }
-//            res.set_content(result, CTYPE_TEXT);
-//        });
-//        svr.Delete("/v1/upgrade", [&](const Request &req, Response &res) {
-//            MUST_AUTHORIZED();
-//            string result = "Bad Request";
-//            if (lang::os::fexists(CONFIG_UPGRADE_FILE)) {
-//                if (0 != remove(CONFIG_UPGRADE_FILE)) {
-//                    result = "OK";
-//                } else {
-//                    result = "Internal server error";
-//                }
-//            }
-//            res.set_content(result, CTYPE_TEXT);
-//        });
+
         svr.set_error_handler([&](const Request & /*req*/, Response &res) {
-            const char *fmt = "<p>Error Status: <span style='color:red;'>%d</span></p>";
-            char buf[200];
-            snprintf(buf, sizeof(buf), fmt, res.status);
+#define _CODE  "code"
+#define _FAILED  "failed"
+            string buf = strings::sprintf("{" "\n\"" _CODE "\":\"%s\" \n" "}\n",_FAILED);
             res.set_content(buf, "text/html");
         });
 
@@ -531,45 +421,6 @@ public:
                 {"_err", err},
         };
         res.set_content(e.dump(), CTYPE_JSON);
-    }
-
-    void writeResponse2HeXiang(int len) {
-        svr.write_response(svr.getCurrentSock(),len);
-    }
-
-    socket_t getCurrentSocket() {
-        return svr.getCurrentSock();
-    }
-
-protected:
-    static Json doGetEthernet() {
-        auto &&cfg = conf::etc::ether_query();
-        return Json{{"proto", cfg.proto},
-                    {"ipaddr", cfg.ipaddr},
-                    {"netmask", cfg.netmask},
-                    {"gateway", cfg.gateway},
-                    {"dns", cfg.dns},
-        };
-    }
-    static string doPostEthernet(const Json &body) {
-        auto cfg = conf::etc::ether_query();
-        string err;
-        jsons::optional("proto",body , cfg.proto);
-        if (cfg.is_static()) {
-            jsons::optional("ipaddr",body , cfg.ipaddr);
-            jsons::optional("netmask",body , cfg.netmask);
-            jsons::optional("gateway",body ,  cfg.gateway);
-            jsons::optional("dns",body, cfg.dns);
-            if (cfg.ipaddr.empty() || cfg.netmask.empty() || cfg.gateway.empty() || cfg.dns.empty()) {
-                err = "Bad Request";
-            }
-        } else if (!cfg.is_dhcp()) {
-            err = "Bad Request";
-        }
-        if (err.empty()) {
-            conf::etc::ether_setup(cfg);
-        }
-        return err;
     }
 };
 

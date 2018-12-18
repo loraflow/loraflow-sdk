@@ -13,27 +13,6 @@ conf::Config conf::INSTANCE;
 App app;
 WebAPI web{};
 int hylength;
-//enum COUNT_STATE {_START,_CONN,DISCONN,MAX};
-//static COUNT_STATE startCount = _START;
-//static std::string str("createThread");
-
-//void threadFunc(std::string &str, int a)
-//{
-//    while(1) {
-//        if(startCount == _CONN) {
-////            INFOF("hylength:{}",hylength);
-////            web.writeResponse2HeXiang(hylength);
-//            lang::os::sleep_ms(100);
-//        }else if(startCount == DISCONN){
-//            INFOF("SOCKET IS CLOSED");
-////            INFOF("正在接收...{}",hylength);
-////            close(web.getCurrentSocket());
-//            startCount = _START;
-//        }else {
-//            lang::os::sleep_ms(300);
-//        }
-//    }
-//}
 
 namespace hythread {
 
@@ -82,22 +61,17 @@ void threadFuncMain(std::string &str, int argc, char **argv)
 
 void threadFuncApi(std::string &str, int a)
 {
-    PRINTF("HY.Web Server Start{}...",os::version().data());
+    PRINTF("Web Server Start{}...",os::version().data());
     Json conf = conf::INSTANCE.Get();
     std::map<string, Cnode*> nodesmap{};
-    string path = "./.upgrade/status";
+    string path = "/root/.upgrade/status";
     std::fstream dst1;
     string result = lang::os::fread(path);
     dst1.close();
-    INFOF("-------------------------------");
-    INFOF("UPGRADE RESULT IS : {}", result);
-    INFOF("-------------------------------");
     if (result == "0\n") {
         web.setUpgardeSuccess();
-        INFOF("UPGRADE RESULT IS : {}", result);
     }else if (result == "1\n") {
         web.setUpgradeFailed();
-        INFOF("UPGRADE RESULT IS : {}", result);
     }
     try {
         string host = "0.0.0.0";
@@ -126,7 +100,6 @@ int main(int argc, char **argv) {
     std::thread th3(threadFuncMain, std::ref(str),argc,argv);
     th2.join();
     th3.join();
-/******************************************************/
 #else
     Json conf = conf::INSTANCE.Get();
     std::map<string, Cnode*> nodesmap{};

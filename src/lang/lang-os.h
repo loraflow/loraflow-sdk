@@ -126,7 +126,7 @@ namespace lang {
         bool fcopy(string dst, string src, bool ovwr);
         string fread(const string &name);
         void fwrite(const string &name, const string &data);
-
+        string ftail(const string &name,int bytes);
         using Mutex = std::mutex;
 
         void atexit(std::function<void(void)>);
