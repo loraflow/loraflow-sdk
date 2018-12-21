@@ -13,6 +13,7 @@ conf::Config conf::INSTANCE;
 App app;
 WebAPI web{};
 int hylength;
+bool isReset = false;
 
 namespace hythread {
 
@@ -64,15 +65,6 @@ void threadFuncApi(std::string &str, int a)
     PRINTF("Web Server Start{}...",os::version().data());
     Json conf = conf::INSTANCE.Get();
     std::map<string, Cnode*> nodesmap{};
-    string path = "/root/.upgrade/status";
-    std::fstream dst1;
-    string result = lang::os::fread(path);
-    dst1.close();
-    if (result == "0\n") {
-        web.setUpgardeSuccess();
-    }else if (result == "1\n") {
-        web.setUpgradeFailed();
-    }
     try {
         string host = "0.0.0.0";
         int port = 8000;
@@ -90,16 +82,34 @@ void threadFuncApi(std::string &str, int a)
     INFOF("Bye World!");
 }
 
+void threadFuncReset(std::string &str, int a)
+{
+    INFOF("Web Server Reset Thread Start...");
+
+    while (1) {
+        if(isReset) {
+            isReset = false;
+            lang::os::sleep_ms(5000);
+            lang::os::reboot();
+        }
+        lang::os::sleep_ms(50);
+    }
+//    INFOF("Bye Reset Thread!");
+}
+
 
 int main(int argc, char **argv) {
 
 #if 1
     std::string str("threadFuncMain");
     std::string str1("threadFuncApi");
+    std::string str2("threadFuncReset");
     std::thread th2(threadFuncApi, std::ref(str1),9);
     std::thread th3(threadFuncMain, std::ref(str),argc,argv);
+    std::thread th4(threadFuncReset, std::ref(str2),10);
     th2.join();
     th3.join();
+    th4.join();
 #else
     Json conf = conf::INSTANCE.Get();
     std::map<string, Cnode*> nodesmap{};

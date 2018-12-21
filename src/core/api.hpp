@@ -134,8 +134,8 @@ class WebAPI {
     httplib::Server svr;
     bool _authorized = true;
     const Timepoint _uptime;
-    int currentTotalLen ;
-    enum UPGRADE_STATUS : uint8_t {UPGRADE_START,UPGRADE_FAILED,UPGRADE_SUCCESS,UPGRADE_MAX};
+    int currentTotalLen = 0;
+    enum UPGRADE_STATUS : uint8_t {UPGRADE_START,UPGRADE_FAILED,UPGRADE_SUCCESS,UPGRADE_ING,UPGRADE_MAX};
     UPGRADE_STATUS upgradeSuccess = UPGRADE_START;
 
 public:
@@ -151,6 +151,10 @@ public:
 
     void setUpgradeFailed() {
         upgradeSuccess = UPGRADE_FAILED;
+    }
+
+    void setUpgradeIng() {
+        upgradeSuccess = UPGRADE_ING;
     }
 
     void setUpgradeStart() {
@@ -195,15 +199,33 @@ public:
 #define RATE "rate"
             INFOF("RATE:({}:{})",currentTotalLen,hylength);
             int rate = 0;
+            string path = "/root/.upgrade/status";
+            std::fstream dst1;
+            string result = lang::os::fread(path);
+            dst1.close();
+            if (result == "0\n") {
+                setUpgardeSuccess();
+            }else if (result == "1\n"){
+                setUpgradeFailed();
+            }else {
+                setUpgradeIng();
+            }
             if (upgradeSuccess == UPGRADE_SUCCESS) {
                 rate = 100;
             }else if (upgradeSuccess == UPGRADE_FAILED){
                 rate = -1;
-            }else if (hylength >= currentTotalLen ) {
+            }else if(upgradeSuccess == UPGRADE_ING){
+                // 404 not found
+                res.status = 404;
+            }else if (hylength >= currentTotalLen && currentTotalLen > 0) {
                 rate = 50;
             }else {
-                rate = (int)((double)(hylength*100)/(double)currentTotalLen);
-                rate = rate > 50 ? 50 : rate;
+                if (currentTotalLen > 0) {
+                    rate = (int)((double)(hylength*100)/(double)currentTotalLen);
+                    rate = rate >= 50 ? 40 : rate;
+                }else {
+                    res.status = 404;
+                }
             }
             string test = strings::sprintf("{" "\n\"" RATE "\":\"%d\" \n" "}\n",rate);
             res.set_content(test, CTYPE_JSON);
@@ -286,8 +308,9 @@ public:
             INFOF("RESET OK");
             string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_OK);
             res.set_content(test, CTYPE_JSON);
-            lang::os::sleep_ms(1000);
-            lang::os::reboot();
+            isReset = true;
+//            lang::os::sleep_ms(1000);
+//            lang::os::reboot();
         });
 
 #define ON_USER "username"

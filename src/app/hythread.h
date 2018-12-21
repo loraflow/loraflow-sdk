@@ -7,6 +7,7 @@
 
 #include <thread>
 extern int hylength;
+extern bool isReset;
 namespace hythread{
     void startCountThread();
     void stopCountThread();
