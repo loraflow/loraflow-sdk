@@ -97,6 +97,7 @@ static void parseWebGetRequest(const Request &req, Response &res) {
             return;
         }
     }
+    res.status = 400;
     string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",RESULT_FAILED);
     res.set_content(test, CTYPE_JSON);
 }
@@ -117,6 +118,9 @@ static void parseWebPostRequest(const Request &req, Response &res) {
 //            dst1.close();
 //            res.set_content(result, CTYPE_JSON);
         }
+    }
+    if(result == "Bad Request") {
+        res.status = 400;
     }
     string test = strings::sprintf("{" "\n\"" RESULT_GET "\":\"%s\" \n" "}\n",result == "OK" ? RESULT_OK:RESULT_FAILED);
     res.set_content(test, CTYPE_JSON);
