@@ -4,7 +4,7 @@
             "gateway_ID": "0000000000000000",
             "log": "info",
             "udplisten": 1680,
-            "catchtimeout": 60,
+            "cachetimeout": 60,
             "txpower": 14
         },
         "networkservice": {

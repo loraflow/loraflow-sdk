@@ -199,16 +199,13 @@ namespace lang {
 
             for (itor = addrs; itor; itor = itor->ifa_next) {
                 if (itor->ifa_addr && itor->ifa_addr->sa_family == AF_INET) {
-                    struct sockaddr_in *pAddr = (struct sockaddr_in *)itor->ifa_addr;
+                    auto *pAddr = (struct sockaddr_in *)itor->ifa_addr;
                     string ip = inet_ntoa(pAddr->sin_addr);
                     if (ip.find("127.") != 0) {
-                        if (result.size()) {
+                        if (!result.empty()) {
                             result += ",";
                         }
                         result += ip;
-                        if (result.find(",") > 0) {
-                            break;
-                        }
                     }
                 }
             }

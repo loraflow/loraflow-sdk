@@ -38,7 +38,7 @@ namespace haul {
                 exit(-1);
             }
 
-            _catchtimeout = lcf.system.catchtimeout;
+            _cachetimeout = lcf.system.cachetimeout;
 
             _servers.push(Url("tls", ext.url, 4882));
             _servers.push(Url("tcp", ext.url, 4881));
@@ -85,9 +85,6 @@ namespace haul {
                                     delete m;
                                     break;
                                 }
-                                case PKT_HEARTBEAT:
-                                    delete m;
-                                    break;
                                 default:
                                 {
                                     unique_ptr<Message> pr(m);
@@ -141,14 +138,21 @@ namespace haul {
                         if (!pmsg && !(pmsg = _up->take(3000))) {
                             break;
                         }
-                        if (pmsg->age() <= _catchtimeout) {
+                        if (pmsg->age() <= _cachetimeout) {
                             break;
                         }
-                        WARNF("message expired after {}s (max {} allowd)", pmsg->age(), _catchtimeout);
+                        WARNF("message expired after {}s (max {} allowd)", pmsg->age(), _cachetimeout);
                         pmsg = nullptr;
                     }
                     if (!transport || brokenVersion == transport->version) {
                         break;
+                    }
+                    if (!pmsg) {
+                        auto ip2 = os::getip();
+                        if (_ipaddrs != ip2) {
+                            WARNF("disconnecting as ip changed {} -> {}", _ipaddrs, ip2);
+                            break;
+                        }
                     }
                     try {
                         if (pmsg) {
@@ -204,7 +208,7 @@ namespace haul {
                     _transports.close(transport);
                     transport = nullptr;
                 GUARD_END();
-                os::sleep_ms(1000 + random()%5000);
+                os::sleep_ms(static_cast<int>(1000 + (unsigned)random() % 5000));
             }
             for (int i=0; i<3 && !transport; i++) {
                 auto t = _transports.connect(_mac.to_string(), _servers);
@@ -222,6 +226,7 @@ namespace haul {
                     _dgproto->write(t, &cm, *_codec);
                     GUARD_BEGIN(_lock);
                         transport = t;
+                        _ipaddrs = os::getip();
                     GUARD_END();
                 } catch (...) {
                     _transports.close(t);
