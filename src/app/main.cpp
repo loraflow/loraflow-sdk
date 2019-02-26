@@ -90,7 +90,8 @@ void threadFuncReset(std::string &str, int a)
         if(isReset) {
             isReset = false;
             lang::os::sleep_ms(5000);
-            lang::os::reboot();
+//            lang::os::reboot();
+            system("./reset");
         }
         lang::os::sleep_ms(50);
     }

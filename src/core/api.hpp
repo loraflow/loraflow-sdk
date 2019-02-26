@@ -218,9 +218,9 @@ public:
                 rate = 100;
             }else if (upgradeSuccess == UPGRADE_FAILED){
                 rate = -1;
-            }else if(upgradeSuccess == UPGRADE_ING){
-                // 404 not found
-                res.status = 404;
+            }else if((upgradeSuccess == UPGRADE_ING) && (rate == 50)){
+                // todo judege if trans cplt
+                    res.status = 404;
             }else if (hylength >= currentTotalLen && currentTotalLen > 0) {
                 rate = 50;
             }else {
