@@ -13,15 +13,20 @@ namespace haul {
 
     namespace extns {
 
-        class extns : public Adaptor {
+        class TCPAdaptor : public Adaptor {
             class TcpSock : public Transport {
                 const int _sock;
             public:
-                TcpSock(int sock):_sock(sock) {
-                }
+                explicit TcpSock(int sock):_sock(sock) {}
 
                 int Reade(void *ptr, int size) override {
-                    return (int)read(_sock, ptr, size);
+                    const int re = read(_sock, ptr, size);
+                    if (re == -1) {
+                        const auto err = errno;
+                        return (err == EWOULDBLOCK || err == EAGAIN) ? 0 : -1;
+                    } else {
+                        return re > 0 ? re : -1;
+                    }
                 }
 
                 int Write(const void *ptr, int size) override {
@@ -34,7 +39,7 @@ namespace haul {
                 }
             };
         public:
-            virtual Transport *connect(Url &url) {
+            Transport *connect(Url &url) override {
 
                 sockaddr_in serveraddr = lang::net::resolve_host(url.host.c_str());
                 if (serveraddr.sin_family == AF_UNSPEC) {
@@ -60,6 +65,10 @@ namespace haul {
                     close(sockfd);
                     return nullptr;
                 }
+                struct timeval tv{};
+                tv.tv_sec = 2;
+                tv.tv_usec = 0;
+                setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
                 return new TcpSock(sockfd);
             }
         };

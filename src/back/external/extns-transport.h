@@ -32,14 +32,14 @@ namespace haul {
 
         class Transport {
             friend class Transports;
-            int _references;
+            int _references{};
+            bool _closed{};
             virtual int Close() = 0;
         public:
-            virtual ~Transport(){}
-            Transport() {
-                _references = 0;
-            }
-            uint32_t version;
+            virtual ~Transport()= default;
+            Transport() = default;
+            uint32_t version{};
+            // return -1 if error, 0 if would block, n>0 if data received
             virtual int Reade(void*ptr, int size) = 0;
             virtual int Write(const void*ptr, int size) = 0;
             Transport* reference() {
@@ -63,17 +63,21 @@ namespace haul {
 
         public:
 
-            void support(string scheme, Adaptor *adaptor) {
+            void support(const string& scheme, Adaptor *adaptor) {
                 _adaptors[scheme] = adaptor;
             }
 
-            void close(Transport * t) {
-                if (--t->_references <= 0) {
+            void close(Transport * t, bool safe={}) { // is safe to close if no more 'write' will occur
+                const auto safest = --t->_references <= 0;  // it's safest if no more reference
+                if ((safe || safest) && !t->_closed) {
+                    t->_closed = true;
                     t->Close();
+                }
+                if (safest) {
                     delete t;
                 }
             }
-            Transport * connect(string uuid, queue<Url> &servers) {
+            Transport * connect(const string& uuid, queue<Url> &servers) {
                 if (_attempted) {
                     if (os::mills() - _attempted < MIN_RECONNECT_INTVL) {
                         os::sleep_ms(rand() % (MIN_RECONNECT_INTVL*2));
@@ -96,13 +100,13 @@ namespace haul {
                         // clear backoff after a successful connect
                         INFOF("connected with {}://{}", url.scheme, url.host);
                         static uint32_t _vergen = 0;
-                        trans->version = (++_vergen << 1) | 1;
+                        trans->version = (++_vergen << 1u) | 1u;
                         trans->_references = 1;
                     } else {
                         WARNF("cannot connect {}://{}", url.scheme, url.host);
                     }
                     return trans;
-                } catch (out_of_range e) {
+                } catch (out_of_range& e) {
                     return nullptr;
                 }
             }

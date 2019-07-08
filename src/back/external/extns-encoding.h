@@ -80,7 +80,7 @@ namespace haul {
             }
 
             Message *decode(uint8_t *buf, int size) override {
-                if (size < 2 || (buf[0] & 0x18) != (1 << 3)) {
+                if (size < 2 || (buf[0] & 0x18u) != (1u << 3u)) {
                     if (size == 0) {
                         DEBUGF("hbeat down");
                         return new HbeatMessage;
@@ -89,12 +89,12 @@ namespace haul {
                     return nullptr;
                 }
                 Message *ptr = nullptr;
-                switch (buf[0] & 7) {
+                switch (buf[0] & 7u) {
                     case TYPEID_PULLRESP:
                     {
                         auto resp = new PullResp;
                         bool valid;
-                        if (buf[0] & (1<<7)) { //is binary
+                        if (buf[0] & (1u<<7u)) { //is binary
                             DEBUGF("PULLRESP BINARY {}", lang::Hex(buf, size));
                             valid = resp->fromBinary(buf+1, size - 1);
                         } else {
@@ -145,7 +145,7 @@ namespace haul {
         class PFCodec_V02 : public PFCodec {
             EUI64           &_mac;
         public:
-            PFCodec_V02(EUI64 &m):_mac(m) {}
+            explicit PFCodec_V02(EUI64 &m):_mac(m) {}
 
             int encode(Message *message, uint8_t *buf, int capacity) override {
                 int pfhdrbytes = 4;

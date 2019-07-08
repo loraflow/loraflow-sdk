@@ -28,19 +28,19 @@ namespace haul {
 
         class Backend : public BaseBackend {
             os::Mutex       _lock;
-            Transport       *transport = nullptr;
-            uint32_t        brokenVersion = 0;
+            Transport       *transport{};
+            uint32_t        brokenVersion{};
             std::thread     _thrd;
             std::thread     _thwr;
             Timeout         _watchdog;
             Timeout         _heartbeat;
-            MessageQ        *_up;
-            MessageQ        *_down;
+            MessageQ        *_up{};
+            MessageQ        *_down{};
             queue<Url>      _servers;
             EUI64           _mac;
             Transports      _transports;
-            DgramProto      *_dgproto;
-            PFCodec         *_codec;
+            DgramProto      *_dgproto{};
+            PFCodec         *_codec{};
             std::string     _ipaddrs;
             uint32_t        _cachetimeout{};
         public:

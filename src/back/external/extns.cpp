@@ -42,7 +42,7 @@ namespace haul {
             _servers.push(Url("tls", ext.url, 4882));
             _servers.push(Url("tcp", ext.url, 4881));
 
-            _transports.support("tcp", new extns());
+            _transports.support("tcp", new TCPAdaptor());
 #if CONFIG_SUPPORT_SSL == 1
             _transports.support("tcp", new TLSAdaptor());
 #endif
@@ -64,10 +64,13 @@ namespace haul {
         void* Backend::_daemon_read() {
             Transport *ref = nullptr;
             for (;;) {
-                bool reconnect = !ref;
+                bool reconnect = !ref || ref != transport;
                 if (!reconnect) {
                     try {
                         auto dg = _dgproto->read(ref);
+                        if (!dg.length) {
+                            continue;
+                        }
                         Message *m = _codec->decode(dg.data, dg.length);
                         if (!m) {
                             DEBUGF("null msg?");
@@ -92,7 +95,7 @@ namespace haul {
                                 }
                             }
                         }
-                    } catch (BadConnection e) {
+                    } catch (const BadConnection &e) {
                         INFOF("bad connection {}", e.cause);
                         reconnect = true;
                     }
@@ -109,13 +112,14 @@ namespace haul {
                         os::sleep_ms(500);
                         GUARD_BEGIN(_lock);
                             if (transport) {
-                                if (transport && transport->version && transport->version != brokenVersion) {
+                                if (transport->version && transport->version != brokenVersion) {
                                     ref = transport->reference();
                                     brokenVersion = 0;
                                 }
                             }
                         GUARD_END();
                     }
+                    INFOF("reader re live ver{}", ref->version);
                 }
             }
         }
@@ -203,7 +207,7 @@ namespace haul {
             if (transport) {
                 GUARD_BEGIN(_lock);
                     ERRORF("close tcp socket");
-                    _transports.close(transport);
+                    _transports.close(transport, true);
                     transport = nullptr;
                 GUARD_END();
                 os::sleep_ms(static_cast<int>(1000 + (unsigned)random() % 5000));
@@ -211,7 +215,7 @@ namespace haul {
             for (int i=0; i<3 && !transport; i++) {
                 auto t = _transports.connect(_mac.to_string(), _servers);
                 if (!t) {
-                    os::sleep_ms(1000);
+                    os::sleep_ms(1000 + (unsigned)random() % 2000);
                     continue;
                 }
                 try {
@@ -227,7 +231,7 @@ namespace haul {
                         _ipaddrs = os::getip();
                     GUARD_END();
                 } catch (...) {
-                    _transports.close(t);
+                    _transports.close(t, true);
                 }
             }
         }

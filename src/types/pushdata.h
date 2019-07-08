@@ -25,23 +25,21 @@ namespace haul {
     using lora::CR;
 
     class PushData : public Message {
-        uint8_t *rawbuf = nullptr;
+        uint8_t *rawbuf{};
     public:
         struct RX {
-            RxInfo      info;
-            uint8_t     size;
-            uint8_t     *payload;
+            RxInfo      info{};
+            uint8_t     size{};
+            uint8_t     *payload{};
         };
-        RX          _rxs[8];
-        uint8_t     _nbpkt = 0;
+        RX          _rxs[8]{};
+        uint8_t     _nbpkt{};
         const uint64_t  _rxmills;
     public:
         PushData():_rxmills(lang::os::mills()) {}
 
-        ~PushData() {
-            if (rawbuf) {
-                delete []rawbuf;
-            }
+        ~PushData() override {
+            delete []rawbuf;  // delete null pointer has no effect
         }
 
         uint8_t get_type() override {
@@ -50,10 +48,10 @@ namespace haul {
         int64_t age() override {
             return (lang::os::mills() - _rxmills) / 1000;
         }
-        void fromDirect(const lgw_pkt_rx_s * const lgw_rxs, int nb_pkt);
+        void fromDirect(const lgw_pkt_rx_s *lgw_rxs, int nb_pkt);
         void fromRxInd(const RxInd &ind);
         bool fromJson(const Json &j);
-        int toBinary(uint8_t * const buff);
+        int toBinary(uint8_t *buff);
         int jsonize(uint8_t *buff) override;
     };
 
