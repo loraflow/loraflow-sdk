@@ -68,10 +68,10 @@ namespace haul {
                 if (!reconnect) {
                     try {
                         auto dg = _dgproto->read(ref);
-                        if (!dg.length) {
+                        if (!dg) {
                             continue;
                         }
-                        Message *m = _codec->decode(dg.data, dg.length);
+                        Message *m = _codec->decode(dg->data, dg->length);
                         if (!m) {
                             DEBUGF("null msg?");
                         } else {

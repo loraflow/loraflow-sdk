@@ -11,6 +11,7 @@
 #include <types/message.h>
 #include <backend-base.h>
 #include <external/extns-encoding.h>
+#include "nonstd/optional.hpp"
 
 namespace haul {
     namespace extns {
@@ -18,23 +19,24 @@ namespace haul {
 
         using namespace lang;
         using endian = LittleEndian;
+        using nonstd::optional;
 
         class BadConnection : public std::exception {
         public:
             enum Cause {CLOSED, BADPROTO} cause;
 
-            BadConnection(Cause c):cause(c) {}
+            explicit BadConnection(Cause c):cause(c) {}
         };
 
         struct Dgram {
-            uint8_t     *data{};
-            int         length{};
+            uint8_t     *data;
+            int         length;
         };
 
         class DgramProto {
         public:
             virtual void reset() = 0;
-            virtual Dgram read(Transport *ref) = 0;
+            virtual optional<Dgram> read(Transport *ref) = 0;
             virtual void write(Transport *ref, Message *message, PFEncode &enc) = 0;
         };
 
@@ -50,8 +52,8 @@ namespace haul {
                 wptr = _read_buff;
                 rptr = _read_buff;
             }
-            Dgram read(Transport *tpt) override {
-                Dgram result{};
+            optional<Dgram> read(Transport *tpt) override {
+                optional<Dgram> result{};
                 int n;
                 *rptr = swapchar;
                 while(true) {
@@ -70,8 +72,7 @@ namespace haul {
                             rptr += DGRAM_OVERHEAD;
                             swapchar = rptr[size];
                             rptr[size] = '\0';
-                            result.length = size;
-                            result.data = rptr;
+                            result = Dgram{rptr, size};
                             rptr += size;
                             break;
                         }
@@ -119,12 +120,12 @@ namespace haul {
                 wptr = _read_buff;
                 rptr = _read_buff;
             }
-            Dgram read(Transport *tpt) override {
-                Dgram result{};
+            optional<Dgram> read(Transport *tpt) override {
+                optional<Dgram> result{};
                 int n;
                 *rptr = swapchar;
                 while(true) {
-                    if (wptr - rptr >= 2) {     //loop starts from begin of buff
+                    if (wptr - rptr >= DGRAM_OVERHEAD) {     //loop starts from begin of buff
                         const uint8_t ver = *rptr;
                         if ((ver & 3u) != DGRAM_PROTO_2) {
                             ERRORF("invalid dgram protocol {} {}", ver, Hex(rptr, 8));
@@ -135,8 +136,7 @@ namespace haul {
                             rptr += DGRAM_OVERHEAD;
                             swapchar = rptr[size];
                             rptr[size] = '\0';
-                            result.data = rptr;
-                            result.length = size;
+                            result = {rptr, size};
                             rptr += size;
                             break;
                         }

@@ -24,6 +24,7 @@ LIBROOT = lib
 
 INCLUDES += -I$(LIBROOT)/json
 INCLUDES += -I$(LIBROOT)/spdlog
+INCLUDES += -I$(LIBROOT)/optional-lite/include
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/include
 INCLUDES += -I$(LIBROOT)/SQLiteCpp/sqlite3
 INCLUDES += -I$(LIBROOT)
