@@ -30,13 +30,12 @@ namespace lang {
             res_init();
             const auto rc = getaddrinfo(hostname, NULL, &hints, &result);
             if (rc == 0) {
-                for (addrinfo* res = result; res; ) {
+                for (auto* res = result; res; res = res->ai_next) {
                     if (res->ai_family == AF_INET) {
                         address.sin_family = AF_INET;
                         address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
                         break;
                     }
-                    res = res->ai_next;
                 }
                 freeaddrinfo(result);
             } else {
