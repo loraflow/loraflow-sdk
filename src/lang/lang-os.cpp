@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/reboot.h>
 #include "lang-log.h"
+#include <resolv.h>
 
 namespace lang {
 
@@ -21,32 +22,25 @@ namespace lang {
 
         sockaddr_in resolve_host(const char* hostname)
         {
-            sockaddr_in address = {0};
+            sockaddr_in address{};
             address.sin_family = AF_UNSPEC;
-            struct addrinfo *result;
-            struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
+            addrinfo *result{};
+            addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
 
-            if (getaddrinfo(hostname, NULL, &hints, &result) == 0)
-            {
-                struct addrinfo* res = result;
-
-                /* prefer ip4 addresses */
-                while (res)
-                {
-                    if (res->ai_family == AF_INET)
-                    {
-                        result = res;
+            res_init();
+            const auto rc = getaddrinfo(hostname, NULL, &hints, &result);
+            if (rc == 0) {
+                for (addrinfo* res = result; res; ) {
+                    if (res->ai_family == AF_INET) {
+                        address.sin_family = AF_INET;
+                        address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
                         break;
                     }
                     res = res->ai_next;
                 }
-
-                if (result->ai_family == AF_INET) {
-                    address.sin_family = AF_INET;
-                    address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
-                }
-
                 freeaddrinfo(result);
+            } else {
+                WARNF("unable to resolve {} rc {} {}", hostname, rc, gai_strerror(rc));
             }
             return address;
         }
